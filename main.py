@@ -1,3 +1,7 @@
+from transl import trans
+
+
+
 
 f = open("file.txt","r")
 s = f.read()
@@ -32,14 +36,27 @@ def splinstr(s):    #переводим список обратно в стро�
     stro = st.replace(" ** ","\n")
     return stro
 
+def trans_spis(s): #принимает список, возвращает переведенный
+    di = {}
+    for i in range(len(s)):
+        di.update({ s[i] : trans(s[i]) })
+    return di
 
 
 
 
 def main(s):
-    e = get_dict(form_corp(s),get_spis(form_corp(s)))
-    ...
+    #e = get_dict(form_corp(s),get_spis(form_corp(s)))
+    e = trans_spis(get_spis(form_corp(s)))
+    e_spis = get_spis(form_corp(s))
+    s_izm = s
+    for i in e_spis:
+        s_izm = s_izm.replace(i,e[i])
+
     print(e)
+    print(s)
+    print(s_izm)
+
 
 if __name__ == "__main__":
     main(s)
