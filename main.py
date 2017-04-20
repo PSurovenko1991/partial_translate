@@ -1,6 +1,17 @@
 from transl import trans
 
 
+# получить корпус
+# с помощью pymorphy2 перевести все слова в нормальные формы
+# с помощью heapq найдем N наиболее часто встречающихся в тексте слов по формуле. N = длинна корипуса/250
+# получим индексы наиболее встречающихся слов в нормализованном корпусе
+# по индексам сохраним формы слов из первоначального корпуса
+# совершим перевод часто встречающихся слов
+# СОХРАНИМ переведенные слова в словарь
+# по индексам совершим подстановку переведенных слов в первоначальный корпус
+# по индексам и ранее сохраненным формам слов(п4) совершим преобразование переведенных слов в нужную смысловую форму
+# из списка получим строку - Результат.
+
 
 
 f = open("file.txt","r")
@@ -46,16 +57,17 @@ def trans_spis(s): #принимает список, возвращает пер
 
 
 def main(s):
-    #e = get_dict(form_corp(s),get_spis(form_corp(s)))
-     e = trans_spis(get_spis(form_corp(s)))
-     e_spis = get_spis(form_corp(s))
-     s_izm = s
-     for i in e_spis:
-         s_izm = s_izm.replace(i,e[i])
-    
-     print(e)
-     print(s)
-     print(s_izm)
+    pass
+     # e = get_dict(form_corp(s),get_spis(form_corp(s)))
+     # e = trans_spis(get_spis(form_corp(s)))
+     # e_spis = get_spis(form_corp(s))
+     # s_izm = s
+     # for i in e_spis:
+     #     s_izm = s_izm.replace(i,e[i])
+     #
+     # print(e)
+     # print(s)
+     # print(s_izm)
 
 
 if __name__ == "__main__":
