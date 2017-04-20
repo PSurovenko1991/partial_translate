@@ -47,15 +47,15 @@ def trans_spis(s): #принимает список, возвращает пер
 
 def main(s):
     #e = get_dict(form_corp(s),get_spis(form_corp(s)))
-    e = trans_spis(get_spis(form_corp(s)))
-    e_spis = get_spis(form_corp(s))
-    s_izm = s
-    for i in e_spis:
-        s_izm = s_izm.replace(i,e[i])
-
-    print(e)
-    print(s)
-    print(s_izm)
+     e = trans_spis(get_spis(form_corp(s)))
+     e_spis = get_spis(form_corp(s))
+     s_izm = s
+     for i in e_spis:
+         s_izm = s_izm.replace(i,e[i])
+    
+     print(e)
+     print(s)
+     print(s_izm)
 
 
 if __name__ == "__main__":
