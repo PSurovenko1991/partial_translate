@@ -39,16 +39,33 @@ def normform(s):
     return (s2)
 
 def top_word(s): #получаем наиболее часто встречающиеся слова
-    tw = Counter(s).most_common(10) #(int(len(s)/250/2))
+    tw = Counter(s).most_common(10) #(int(len(s)/500))
     return tw
 
-def id_tw(s,s1):  # s - top_word, s1 - normform - запоминаем индексы наиболее часто встречающихся элементов
+def ix_tw(s,s1):  # s - top_word, s1 - normform - запоминаем индексы наиболее часто встречающихся элементов
     s2 =[]
     for i in range(len(s)):
         s2.append([s[i][0]])
         for j in range(len(s1)):
             if s[i][0] == s1[j]:
                 s2[i].append(j)
+    return s2 # индексы наиболее часто встречающихся слов
+
+
+
+def nach_ins(s): #возвращает среднее расстояние между элементами
+    s2 =[]
+    for i in s:
+        s1 =0
+
+        for j in range(len(i)):
+            if j == 0:
+                pass
+            else:
+                if j< (len(i)-1):
+                    s1 = s1+(i[j]-i[j+1])
+        s1 = int(abs(s1/(len(i)-1)))
+        s2.append(s1)
     return s2
 
 
@@ -75,9 +92,12 @@ def splinstr(s):    #переводим список обратно в стро�
 
 
 def main(s):
-     print(top_word(normform(form_corp(s))))
-
-     print(id_tw(top_word(normform(form_corp(s))),normform(form_corp(s))))
+     p1 = normform(form_corp(s))
+     p = (top_word(p1))
+     print(len(form_corp(s)))
+     print(p)
+     print(ix_tw(p, p1))
+     print(nach_ins(ix_tw(p, p1)))
 
 
 
