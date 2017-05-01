@@ -53,20 +53,20 @@ def ix_tw(s,s1):  # s - top_word, s1 - normform - запоминаем инде�
 
 
 
-def nach_ins(s): #возвращает среднее расстояние между элементами
-    s2 =[]
-    for i in s:
-        s1 =0
-
-        for j in range(len(i)):
-            if j == 0:
-                pass
-            else:
-                if j< (len(i)-1):
-                    s1 = s1+(i[j]-i[j+1])
-        s1 = int(abs(s1/(len(i)-1)))
-        s2.append(s1)
-    return s2
+# def nach_ins(s): #возвращает среднее расстояние между элементами
+#     s2 =[]
+#     for i in s:
+#         s1 =0
+#
+#         for j in range(len(i)):
+#             if j == 0:
+#                 pass
+#             else:
+#                 if j< (len(i)-1):
+#                     s1 = s1+(i[j]-i[j+1])
+#         s1 = int(abs(s1/(len(i)-1)))
+#         s2.append(s1)
+#     return s2
 
 
 
@@ -97,7 +97,7 @@ def main(s):
      print(len(form_corp(s)))
      print(p)
      print(ix_tw(p, p1))
-     print(nach_ins(ix_tw(p, p1)))
+     # print(nach_ins(ix_tw(p, p1)))
 
 
 
