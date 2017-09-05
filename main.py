@@ -1,4 +1,7 @@
-from transl import trans
+#from transl import trans0
+from transl import trans1
+from textblob import TextBlob
+
 import pymorphy2
 from collections import Counter
 from breakd import breakdown
@@ -8,25 +11,31 @@ import copy
 # с помощью pymorphy2 перевести все слова в нормальные формы +
 # с помощью heapq найдем N наиболее часто встречающихся в тексте слов по формуле. N = длинна корипуса/250/2 +
 # получим индексы наиболее встречающихся слов в нормализованном корпусе +
-# Упорядочим частовустречающиеся слова по принципу "заменяем, исключая наибольшие потери в будущем" - breakdown
+# Упорядочим частовстречающиеся слова по принципу "заменяем, исключая наибольшие потери в будущем" - breakdown
 # найти индекс - начало вставки переведенного слова+
 
-# по индексам сохраним формы слов из первоначального корпуса*
-# совершим перевод часто встречающихся слов +
-# СОХРАНИМ переведенные слова в словарь
-# по индексам совершим подстановку переведенных слов в первоначальный корпус
-# по индексам и ранее сохраненным формам слов(п6) совершим преобразование переведенных слов в нужную смысловую форму
+
+# получим финальный список индексов для перевода+
+
+# по индексам совершим перевод часто встречающихся слов в первоначальном корпусе *
+
+# (учесть рядом стоящие слова, подвергаемые переводу, при переводе, для гибкого перевода
+# учесть рядом стоящие слова для постановки переводимых в нужную форму)
 # из списка получим строку - Результат.
-# юзаем data['CountryID'] = pd.factorize(data.Country)[0] для сокращенния времени работы ???
+
+# юзаем data = pd.factorize(data)[0] для сокращенния времени работы ???
 
 
 f = open("file.txt","r")
-s = f.read()
+file0 = f.read()
 f.close()
 
 
-def form_corp(s): # формируем корпус из строки, заменяя переводы строки на "**"
-    corp = s.replace("\n", " ** ").split(" " )
+def form_corp(s): # формируем корпус из строки, заменяя переводы строки на "***", утраиваем символы для распознания языка в дальнейшем
+    corp = s.replace("\n", " *** ").replace("–","–––").replace('-','---').replace('+','+++').split(" " )
+    for i in range(corp.count('')):
+        corp.remove('') #удаляем пустой символ
+
     return corp
 
 def normform(s):
@@ -51,7 +60,6 @@ def get_index_tw(s,s1):  # s - top_word, s1 - normform - запоминаем и
                 s2[i].append(j)
     return s2 # индексы наиболее часто встречающихся слов
 
-
 def get_first_index(s, s1): # s - список упорядоченных ТВ (OrdonoTW),s1 - список индексов(IndexTW) / принимает списокупорядоченных слов,
     s3=[]
     x=0
@@ -65,10 +73,40 @@ def get_first_index(s, s1): # s - список упорядоченных ТВ (
                         break
     return s3
 
+def get_final_index(s,s1): #IndexTW, FirstIndex - принимает список индексов и первые значения, возвращает индексы для перевода.
+    s2=[]
+    for i in range(len(s)):
+        for i1 in range(len(s1)):
+            if s[i][0]==s1[i1][0]:
+                j=1
+                while j < len(s[i]):
+                    #if type(s[i][j]) !=str:
+                    if s[i][j] < s1[i1][1]:
+                        del s[i][j]
+                    else:
+                        j += 1 # убрали индексы не подлежаших переводу элементов
+    for i in range(len(s)):
+        del s[i][0] # убрали строковые элементы
+    for i in range(len(s)):
+        s2 +=s[i] # слили список индексов в единый
+    s2.sort() # отсортировали
 
+    return (s2)
 
+def transl (s1,s): #Logejo, FinalIndex - переводим слова 
+    for i in s:
+        if len(s1[i])<3 or TextBlob(s1[i]).detect_language()=='ru':
+            s1[i] = str(TextBlob(s1[i]).translate(to='en'))
 
+    return (s1)
 
+def insert_notes(s,s1): # PostTranslList, FirstIndex / принимает список с уже переведенными вставками и начальные индексы
+    for i in range(len(s1)):
+        if len(s1[i][0])<3 or TextBlob(s1[i][0]).detect_language()=='ru':
+            x = "(!!! "+s1[i][0]+" - "+ str(TextBlob(s1[i][0]).translate(to='en'))+" !!!)"
+        else:continue
+        s.insert((s1[i][1])-i,x)
+    return (s)
 
 # def nach_ins(s): #возвращает среднее расстояние между элементами
 #     s2 =[]
@@ -85,15 +123,16 @@ def get_first_index(s, s1): # s - список упорядоченных ТВ (
 #         s2.append(s1)
 #     return s2
 
-def trans_spis(s): #принимает список, возвращает переведенный
-    di = {}
-    for i in range(len(s)):
-        di.update({ s[i] : trans(s[i]) })
-    return di
+# def trans_spis(s): #принимает список, возвращает переведенный
+#     di = {}
+#     for i in range(len(s)):
+#         di.update({ s[i] : trans(s[i]) })
+#     return di
 
-def splinstr(s):    #переводим список обратно в строку, учитывая переносы строки( ** )
+def F_splinstr(s):    #переводим список обратно в строку, учитывая переносы строки( ** )
+    s = map(str, s)
     st = " ".join(s)
-    stro = st.replace(" ** ","\n")
+    stro = st.replace("***","\n").replace("–––","–").replace('---','-').replace('+++','+')
     return stro
 
 
@@ -111,23 +150,38 @@ def main(s):
     # print("Topword: ",TopWordLog)
 
     IndexTW = get_index_tw(TopWordLog, NFlogejo) # получили индексы часто встречающихся слов /list
-    print("IndexTW: ",IndexTW)
+    #print("IndexTW: ",IndexTW)
     IndexTW1 = copy.deepcopy(IndexTW) # создаем копию т.к. объект IndexTW1 ,будет изменен в процессе выполнения breakdown(fuck encapsulation)
 
     OrdonoTW= breakdown(NFlogejo,TopWordLog,IndexTW1) # получили список слов для замены упорядоченный функцией breakdown /list
-    print("OrdonoTW: ",OrdonoTW)
+    #print("OrdonoTW: ",OrdonoTW)
 
     FirstIndex = get_first_index(OrdonoTW, IndexTW) # получили начальные индексы для вставки слов
-    print("first index: ",FirstIndex)
+    #print("first index: ",FirstIndex)
+
+    FinalIndex=get_final_index(IndexTW, FirstIndex) # получили финальный список индексов для перевода
+    #print("FinalIndex: ",FinalIndex)
+
+    PostTranslList = transl(Logejo, FinalIndex) # получили список c частичным переводом
+    #print("PostTranslList: ",PostTranslList[:700])
+
+    FinalList = insert_notes(PostTranslList, FirstIndex)# Вставляем заметки - переводы слов
+    #print("FinalList: ", FinalList)
+
+    FinalStroka = F_splinstr(FinalList)# получили финальную строку с частичным переводом
+    #print("FinalStroka:", FinalStroka)
 
 
 
 
-    # print(len(form_corp(s)))
-    # print(p)
 
-    #  print(nach_ins(ix_tw(p, p1)))
+
+    #Записываем полученную строку в файл:
+    f = open("file1.txt", "w")
+    f.write(FinalStroka)
+    f.close()
+
 
 
 if __name__ == "__main__":
-    main(s)
+    main(file0)
