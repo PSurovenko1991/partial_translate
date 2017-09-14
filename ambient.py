@@ -21,10 +21,11 @@ def _job():
     } # словарь языков,
     if listbox2.curselection() !=():
         l = Language_dict[listbox2.curselection()[0]] # Выбор языка из представленных в listbox2, по умолчанию "EN"
-    s = str(tex.get('1.0', END))[:-1]# метод get добавляет в конец строки /n, берем без последнего символа
+    s = str(tex.get('1.0', END).strip())# метод get добавляет в конец строки /n, strip() -удаляет пробельный символ
     main(s,l)
 
 root = Tk()
+root.title("partial_translate")
 root.geometry('700x230')
 root.resizable(width=False, height=False)
 
