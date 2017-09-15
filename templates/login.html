@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/html">
+<head>
+    <meta charset="UTF-8">
+    <title>Login</title>
+</head>
+<body>
+<div class="container">
+    <br>
+        <h4>Пожалуйста войдите:</h4>
+    </br>
+    <form action="" class="form-inlane" method="post">
+        <input type="text" class="form-control" placeholder="Логин" name="username" value="{{request.form.username}}">
+        <input type="password" class="form-control" placeholder="Пароль" name="password" value="{{request.form.password}}">
+        <input class="btn btn-default" type="submit">
+    </form>
+    <p>{{error}}</p>
+</div>
+
+
+
+</body>
+</html>
