@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Registration</title>
+</head>
+<body>
+
+<div class="container">
+    <h4>Registration</h4>
+    <br>
+    {% from "_formhelprs.html" import render_field %}
+    <form method="POST" action="/registration/">
+        <dl>
+            {{render_field(form.username)}}
+            {{render_field(form.email)}}
+            {{render_field(form.password)}}
+            {{render_field(form.confirm)}}
+            {{render_field(form.accept)}}
+
+        </dl>
+        <p><input type="submit" value="Регистрация"></p>
+    </form>
+        {% if error %}
+        <p class="error"><strong>Error:</strong>{{error}}</p>
+        {% endif %}
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+   {% block title %} Пользователь: {{item.name}} {% endblock %}
+    {% block content %}
+        <p>Логин: {{item.nic_name}}</p>
+        <p>Фамилия: {{item.last_name}}</p>
+        <p>Имя: {{item.name}}</p>
+        <p>Отчество: {{item.sername}}</p>
+        <p>Дата Рождения {{item.birday}}</p>
+        <p>Телефон: {{item.tel}}</p>
+    {% endblock %}

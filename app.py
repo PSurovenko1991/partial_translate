@@ -1,21 +1,28 @@
-from flask import Flask, render_template, request, send_file, flash, url_for, redirect
+from flask import Flask, render_template, request, send_file, flash, url_for, redirect, session
 from werkzeug.utils import secure_filename
 import copy
 import os
 import core
+import MySQLdb
+from dbconnect import connect
+from WForm import RegistrationForm
+from passlib.hash import sha256_crypt
+from MySQLdb import escape_string as thwart
+import gc
+
 
 
 
 
 UPLOAD_FOLDER = 'files/'#
 app = Flask(__name__)
+app.secret_key = "my_secret_key"
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER         # папка загрузки файлов
 max_file_size = 2
 app.config['MAX_CONTENT_LENGTH'] = max_file_size * 1024 * 1024 # максимальный размер файла 2мб
 
 
 #Вход в систему:
-
 @app.route('/login/', methods=['GET','POST'])
 def login_page():
     error=""
@@ -33,8 +40,34 @@ def login_page():
         error = e
         return render_template('login.html', error=error)
 
+# Регистрация:
 
 
+@app.route('/registration/', methods=['GET','POST'])
+def reg_page():
+    form = RegistrationForm(request.form)
+    if request.method == "POST" and form.validate():
+        username = form.username.data
+        email = form.email.data
+        password = sha256_crypt.encrypt(str(form.password.data))
+        c, conn = connect()
+        #zap = "SELECT * FROM users WHERE username = '{0}'".format(str((username)))
+        #print(zap)
+        x = c.execute("SELECT * FROM users WHERE username = '{0}'".format(str(username)))
+        if int(x)>0:
+            message = "логин занят, придумайте другой."
+            print(message)
+            return render_template('registration.html', form=form)
+        else:
+            c.execute("INSERT INTO users (username, password, email) VALUES (%s, %s, %s)",
+                    (thwart(username),thwart(password),thwart(email)))
+            conn.commit()
+            c.close()
+            conn.close()
+            gc.collect()
+            session["logged_in"] = True
+            return redirect(url_for("upload_file"))
+    return render_template('registration.html', form = form)
 
 
 
