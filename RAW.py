@@ -140,3 +140,73 @@
 #         pass
 #     else:
 #         a.append(i)
+
+
+
+#
+# try:
+#     return send_file(fname2, attachment_filename="file_X")
+#
+# except Exception:
+#     pass
+# else:
+#     pass
+# finally:
+#     return render_template('upload.html')
+#
+#
+#
+#
+# @app.route('/return-files/<fname2>')
+# def return_files_tut(fname2):
+# 	try:
+# 		return send_file(fname2, attachment_filename="file_X")
+#
+# 	except Exception as e:
+# 	    return str(e)
+#     else
+#         pass
+#
+#     finally:
+#         return render_template('upload.html')
+
+
+# import pypyodbc
+#
+# arg = "Driver = {SQL Server}; Server = IP\servername; Database = nameDB; uid = username; pwd = password;",
+#
+# connect = pypyodbc.connect(arg)
+#
+# cursor = connect.cursor()
+#
+# sqlquery = """
+#             FROM TABLE SELECT *
+#            """
+#
+#
+# cursor.execute(sqlquery)
+# result = cursor.fetchall()
+#
+# print( str(result))
+
+#
+# from MySQLdb import escape_string as thwart
+#
+# a = "qwert"
+# d = thwart(a)
+# c = str(d)
+# print(d)
+# print(type(d))
+# print(c)
+# print(type(c))
+
+
+from passlib.hash import sha256_crypt
+
+a = sha256_crypt.encrypt('admin1')
+print(a)
+print(type(a))
+b = 'admin11'
+print(b)
+t = sha256_crypt.verify(b,a)
+print(t)

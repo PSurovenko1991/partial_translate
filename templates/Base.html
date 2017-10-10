@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %} Наш Сайт {% endblock %}</title>
+    <link rel="stylesheet" href="static/css/style.css">
+
+</head>
+<body>
+<div>
+    <div id="menu">
+
+        <a href="/">Главная</a>
+        <a href="/registration/">Регистрация</a>
+        <a href="/login/">Войти</a>
+        <a href="/upload/">Обработать файл</a>
+       <!-- <a href="/users">Пользователи</a>
+        <a href="/table">Таблица</a> -->
+    </div>
+
+    <div id="content">
+        {% block content %}Контент главной страницы{% endblock %}
+    </div>
+
+</div>
+</body>
+</html>

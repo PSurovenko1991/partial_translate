@@ -1,16 +1,11 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Загрузить файл</title>
-</head>
-<body>
+{% extends 'Base.html' %}
+{% block title %} Загрузить файл {% endblock %}
 
+{% block content %}
 
 <div class="container" align="left">
 		<a href="/return-files/{{fname2}}" target="blank"><button class='btn btn-default'>Получить файл!</button></a>
    </div>
 
 
-</body>
-</html>
+{% endblock %}

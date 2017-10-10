@@ -9,6 +9,7 @@ from WForm import RegistrationForm
 from passlib.hash import sha256_crypt
 from MySQLdb import escape_string as thwart
 import gc
+from functools import wraps
 
 
 
@@ -22,16 +23,32 @@ max_file_size = 2
 app.config['MAX_CONTENT_LENGTH'] = max_file_size * 1024 * 1024 # максимальный размер файла 2мб
 
 
+#login_d:                                           # Заппрет отображения страниц для анонимного пользователя
+def login_requaired(f):
+    @wraps(f)
+    def wrap(*args, **kwargs):
+        if 'logged_in' in session:
+            return f(*args, **kwargs)
+        else:
+            print('Войдите в систему')
+            return redirect(url_for('login_page'))
+    return wrap
+
+
+
 #Вход в систему:
 @app.route('/login/', methods=['GET','POST'])
 def login_page():
     error=""
     try:
+        c, conn = connect()
         if request.method =="POST":
-            a_username = request.form['username']
-            a_password = request.form['password']
 
-            if a_username == "admin" and a_password == "admin":
+            data = c.execute("SELECT * FROM users WHERE username = '{0}'".format(request.form['username']))
+            data = c.fetchone()[2]
+            if sha256_crypt.verify((request.form['password']),data):
+                session['logged_in'] = True
+                session['username'] = request.form['username']
                 return redirect(url_for('upload_file'))
             else:
                 error = "Неверный логин или пароль. Попробуйте ещё раз"
@@ -41,8 +58,6 @@ def login_page():
         return render_template('login.html', error=error)
 
 # Регистрация:
-
-
 @app.route('/registration/', methods=['GET','POST'])
 def reg_page():
     form = RegistrationForm(request.form)
@@ -70,12 +85,19 @@ def reg_page():
     return render_template('registration.html', form = form)
 
 
+@app.route('/')   #@app.route('/') #           # Отображаем начальную страницу загрузки
+def base():
+    return render_template('Base.html')
+
+
 
 @app.route('/upload/')   #@app.route('/') #           # Отображаем начальную страницу загрузки
+@login_requaired
 def upload_file():
     return render_template('upload.html')
 
 @app.route('/uploader', methods=['GET', 'POST'])    # Получаем файл от пользователя
+@login_requaired
 def upload_files():
     language_dict={
         "English":"en",
@@ -120,6 +142,7 @@ def upload_files():
         return render_template('download.html', fname2=str(n+1)+"_processed("+language_dict[language].upper()+")"+"."+ext) #'file uploaded successfully'
 
 @app.route('/return-files/<fname2>')                 # Отдаем файл пользователю
+@login_requaired
 def return_files_tut(fname2):
     try:
         return send_file(fname2, attachment_filename="file_X")
