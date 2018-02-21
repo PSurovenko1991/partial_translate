@@ -1,3 +1,6 @@
+
+# -*- coding: utf-8 -*-
+
 # from textblob import TextBlob
 #
 # # s = ['я','ты','он','они']
@@ -200,13 +203,51 @@
 # print(c)
 # print(type(c))
 
+#
+# from passlib.hash import sha256_crypt
+#
+# a = sha256_crypt.encrypt('admin1')
+# print(a)
+# print(type(a))
+# b = 'admin11'
+# print(b)
+# t = sha256_crypt.verify(b,a)
+# print(t)
 
-from passlib.hash import sha256_crypt
+#
+# for i in range(6,2,-1):
+#     print(i)
 
-a = sha256_crypt.encrypt('admin1')
-print(a)
-print(type(a))
-b = 'admin11'
-print(b)
-t = sha256_crypt.verify(b,a)
-print(t)
+#
+# s = '1+2'
+# print(eval(s))
+#
+# a = ['aaa','1',"*",'bbb']
+# print(a)
+#
+#
+# for i in reversed(range(len(a))):
+#     if a[i].isalpha()== False:
+#         del a[i]
+# print(a)
+
+# import datetime
+#
+# now,t =str(datetime.datetime.now()).split(' ')
+# t = t.split('.')[0]
+#
+# print(now)
+# print(t)
+
+
+from dbconnect import connect
+
+c, conn = connect()
+
+for i in range(300):
+
+    c.execute('delete from words where '+str(i)+';')
+c.execute('commit;')
+
+c.close()
+conn.close()

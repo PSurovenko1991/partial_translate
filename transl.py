@@ -11,12 +11,12 @@ def trans0(text1):
     # Выводим результат
     return (t)
 
-def trans1(text):
-    text1 = TextBlob(u'text1')
-    text2 = text1.translate(to='en')
+def trans1(text,l): # l = language
+    text1 = TextBlob(text)
+    text2 = text1.translate(to=l)
     return (text2)
 
 
 if __name__ == "__main__":
     x = input("введите текст для перевода(ru-en): ")
-    print(trans(x))
+    print(trans1(x))

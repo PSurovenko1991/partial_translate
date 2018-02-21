@@ -1,27 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>{% block title %} Наш Сайт {% endblock %}</title>
-    <link rel="stylesheet" href="static/css/style.css">
 
-</head>
+        <head>
+            <meta charset="UTF-8">
+            <link rel="stylesheet" href="/static/css/style.css">
+            <link rel="shortcut icon" href='F.ico' />
+            <title>{% block title %} Сайт {% endblock %}</title>
+        </head>
+
+
 <body>
-<div>
-    <div id="menu">
+    <div>
+        <div id="menu">
 
-        <a href="/">Главная</a>
-        <a href="/registration/">Регистрация</a>
-        <a href="/login/">Войти</a>
-        <a href="/upload/">Обработать файл</a>
-       <!-- <a href="/users">Пользователи</a>
-        <a href="/table">Таблица</a> -->
+                {% if session.logged_in %}
+
+                <a href="/">Главная</a>
+                <a href="/upload/">Обработать файл</a>
+                <a href="/im/">Сообщения</a>
+                <a href="/feed/">Уведомления</a>
+                <a href="/dict/">Словарь</a>
+                <a href="/edit/">Редактировать</a>
+                <a href="/logout/">Выйти</a>
+
+                {% else %}
+
+                <a href="/">Главная</a>
+                <a href="/registration/">Регистрация</a>
+                <a href="/login/">Войти</a>
+
+                {% endif%}
+        </div>
+        <div id="content1">
+                 {% block content1 %}{% endblock %}
+        </div>
+
+        <div id="content">
+                 {% block content %}Контент главной страницы{% endblock %}
+        </div>
+
     </div>
-
-    <div id="content">
-        {% block content %}Контент главной страницы{% endblock %}
-    </div>
-
-</div>
 </body>
 </html>

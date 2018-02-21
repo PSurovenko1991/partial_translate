@@ -1,18 +1,27 @@
 {% extends 'Base.html' %}
 {% block title %} Login {% endblock %}
 
-{% block content %}
+{% block content1 %}
 
 <div class="container">
+
     <br>
         <h4>Пожалуйста войдите:</h4>
     </br>
-    <form action="" class="form-inlane" method="post">
+    <form action="http://localhost:5000/login/" class="form-inlane" method="POST">
         <input type="text" class="form-control" placeholder="Логин" name="username" value="{{request.form.username}}">
         <input type="password" class="form-control" placeholder="Пароль" name="password" value="{{request.form.password}}">
         <input class="btn btn-default" type="submit">
     </form>
     <p>{{error}}</p>
+
+    <h4>Забыли пароль?</h4>
+    <form action="http://localhost:5000/login/" class="form-inlane" method="POST">
+        <input type="text" class="form-control" placeholder="Логин" name="username" value="{{request.form.username}}">
+        <input type="email" class="form-control" placeholder="почта" name="email" value="{{request.form.email}}">
+        <input class="btn btn-default" type="submit" placeholder="Восстановить">
+    </form>
+
 </div>
 
 

@@ -10,8 +10,8 @@ from passlib.hash import sha256_crypt
 from MySQLdb import escape_string as thwart
 import gc
 from functools import wraps
-
-
+import datetime
+from transl import trans1
 
 
 
@@ -23,11 +23,12 @@ max_file_size = 2
 app.config['MAX_CONTENT_LENGTH'] = max_file_size * 1024 * 1024 # максимальный размер файла 2мб
 
 
-#login_d:                                           # Заппрет отображения страниц для анонимного пользователя
+# login_d:                                           # Заппрет отображения страниц для анонимного пользователя
 def login_requaired(f):
     @wraps(f)
     def wrap(*args, **kwargs):
         if 'logged_in' in session:
+            print("!!!")
             return f(*args, **kwargs)
         else:
             print('Войдите в систему')
@@ -41,21 +42,36 @@ def login_requaired(f):
 def login_page():
     error=""
     try:
+
         c, conn = connect()
         if request.method =="POST":
 
             data = c.execute("SELECT * FROM users WHERE username = '{0}'".format(request.form['username']))
             data = c.fetchone()[2]
+            c.close()
+            conn.close()
             if sha256_crypt.verify((request.form['password']),data):
                 session['logged_in'] = True
                 session['username'] = request.form['username']
-                return redirect(url_for('upload_file'))
+
+                return redirect(url_for('upload_files'))
             else:
                 error = "Неверный логин или пароль. Попробуйте ещё раз"
         return render_template('login.html', error=error)
     except Exception as e:
         error = e
         return render_template('login.html', error=error)
+
+
+
+
+#Выход из системы:
+@app.route('/logout/')
+def logout():
+    error=""
+    session.clear()
+    return redirect(url_for('login_page'))
+
 
 # Регистрация:
 @app.route('/registration/', methods=['GET','POST'])
@@ -81,29 +97,26 @@ def reg_page():
             conn.close()
             gc.collect()
             session["logged_in"] = True
-            return redirect(url_for("upload_file"))
+            session['username'] = username
+            return redirect(url_for("upload_files"))
     return render_template('registration.html', form = form)
-
 
 @app.route('/')   #@app.route('/') #           # Отображаем начальную страницу загрузки
 def base():
     return render_template('Base.html')
 
+# @app.route('/upload/')    #           # Отображаем начальную страницу загрузки
+# @login_requaired
+# def upload_file():
+#     return render_template('upload.html')
 
-
-@app.route('/upload/')   #@app.route('/') #           # Отображаем начальную страницу загрузки
 @login_requaired
-def upload_file():
-    return render_template('upload.html')
-
-@app.route('/uploader', methods=['GET', 'POST'])    # Получаем файл от пользователя
-@login_requaired
+@app.route('/upload/', methods=['GET', 'POST'])    # Получаем файл от пользователя, обрабатываем, сохраняем список обработанных слов для пользователя
 def upload_files():
+
     language_dict={
         "English":"en",
         "Deutsch":"de",
-        "中国":"zh",
-        "Esperanto":"eo",
         "Français":"fr"
     }
 
@@ -135,14 +148,53 @@ def upload_files():
         fname2 = str(n+1)+"."+ext            # новое имя файла в пространстве сервера
         f.save(fname2)                       # сохраняем загруженный файл под номером, на 1 больше максимального имевшегося
 
-        core.main(fname2, language_dict[language])              # str(language_dict(language))
 
 
+# вносим слова в базу для текущего пользователя:
+#!!!!!!!!!!!!!!!
+
+        x_list = core.main(fname2, language_dict[language])# str(language_dict(language))
         # f.save(secure_filename(f.filename))
+        now,t =  str(datetime.datetime.now()).split(' ') #текущая дата - now
+        now = now.split('-')[0]+now.split('-')[1]+now.split('-')[2]
+        t = t.split('.')[0] # текущее время
+        x_list2 = []
+        for i in x_list:
+            x_list2.append(str(trans1(i,language_dict[language])))
+        c, conn = connect()
+        ex = 'SELECT * FROM users WHERE username = '+'"'+ session['username']+'"'
+        user_id = c.execute(ex)
+        user_id = str(c.fetchone()[0])
+        for i in range(len(x_list)):
+            # проверяем добавлялось ли слово ранее в словарь
+            ex = 'SELECT * FROM words WHERE RU = "'+str(x_list[i])+'";'
+            c.execute(ex)
+            id_word = c.fetchone()
+            if id_word is None:
+                ex = 'INSERT INTO words (RU,'+language_dict[language].upper()+') VALUES ("'+x_list[i]+'", "'+x_list2[i]+'");'
+                c.execute(ex)
+                c.execute('SELECT * FROM words WHERE id=(SELECT max(id) FROM words)')
+                id_word = str(c.fetchone()[0])
+            else: id_word=str(id_word[0])
+            # проверяем есть ли связь слово-пользователь, если нет - добавляем
+            ex = 'SELECT * FROM words_users WHERE id_user = '+user_id+' and id_word = '+id_word+';'
+            c.execute(ex)
+            if c.fetchone() is None:
+                ex = u'INSERT INTO words_users (id_user, id_word, date) VALUES ('+user_id+", "+str(id_word)+", "+now+")"
+                c.execute(ex)
+        c.execute('commit;')
+        c.close()
+        conn.close()
+#!!!!!!!!!!!!!!!!!
+
         return render_template('download.html', fname2=str(n+1)+"_processed("+language_dict[language].upper()+")"+"."+ext) #'file uploaded successfully'
 
-@app.route('/return-files/<fname2>')                 # Отдаем файл пользователю
+    if request.method == 'GET':
+        return render_template('upload.html')
+    return render_template('upload.html')
+
 @login_requaired
+@app.route('/return-files/<fname2>')                 # Отдаем файл пользователю
 def return_files_tut(fname2):
     try:
         return send_file(fname2, attachment_filename="file_X")

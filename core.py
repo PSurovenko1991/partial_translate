@@ -46,6 +46,12 @@ def top_word(s): #получаем наиболее часто встречаю�
     tw = Counter(s).most_common(17) #(int(len(s)/500))
     return tw
 
+def del_char(s): # удаляем 'не слова' (***...)
+    for i in reversed(range(len(s))):
+        if s[i][0].isalpha() == False:
+            del s[i]
+    return s
+
 def get_index_tw(s,s1):  # s - top_word, s1 - normform - запоминаем индексы наиболее часто встречающихся элементов
     s2 =[]
     for i in range(len(s)):
@@ -147,8 +153,9 @@ def main(s,language):
     NFlogejo = normform(Logejo) # Получили список слов в нормальной форме /list
     # print(NFlogejo[0:30])
 
-    TopWordLog = (top_word(NFlogejo)) # Получили топовые слова нормального корпуса /list
-    # print("Topword: ",TopWordLog)
+    TopWordLog = del_char(top_word(NFlogejo)) # Получили топовые слова нормального корпуса /list , удалили не слова
+    #print("Topword: ",TopWordLog)
+
 
     IndexTW = get_index_tw(TopWordLog, NFlogejo) # получили индексы часто встречающихся слов /list
     #print("IndexTW: ",IndexTW)
@@ -177,6 +184,7 @@ def main(s,language):
     f = open(way(s,language), "w")
     f.write(FinalStroka)
     f.close()
+    return (OrdonoTW)
 
 if __name__ == "__main__":
-    main("file.txt","en")
+    main("2.txt","en")
