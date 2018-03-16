@@ -6,6 +6,8 @@ from collections import Counter
 from breakd import breakdown
 import copy
 import re
+from docx import Document # для открытия docx файлов
+
 # получить корпус +
 # с помощью pymorphy2 перевести все слова в нормальные формы +
 # с помощью heapq найдем N наиболее часто встречающихся в тексте слов по формуле. N = длинна корипуса/250/2 +
@@ -27,20 +29,31 @@ import re
 
 
 def form_corp(s): # формируем корпус из строки, заменяя переводы строки на "***", утраиваем символы для распознания языка в дальнейшем
-    corp = s.replace("\n", " *** ").replace("–","–––").replace('-','---').replace('+','+++').split(" " )
+    corp = s.replace("\n", " *** ").replace("–","–––").replace('-','---').replace('+','+++').replace('  ',' ').split(" " )
     for i in range(corp.count('')):
         corp.remove('') #удаляем пустой символ
 
     return corp
 
 def normform(s):
+
     s1 = [] # список форм слов начального корпуса
     s2 = [] # список приведенный в нормальную форму
     morph = pymorphy2.MorphAnalyzer()
     for i in s:
-        #s1.append(morph.parse(i)[0].tag)
-        s2.append(morph.parse(i)[0].normal_form)
+       #s1.append(morph.parse(i)[0].tag)
+       s2.append(morph.parse(i)[0].normal_form)
     return (s2)
+
+def compare_with_users_dict(s, d):
+    s1=[] # список индексов для перевода по умолчанию(ранее изученые слова)
+    for i in range(len(s)):
+        for j in d: # сравнение исходного текста со словарем пользователя, а не неаоборот позволяет сэкономить время за счёт прерывания цикла при нахождении совпадений.
+            if s[i] == j[0]:
+                s1.append(i)
+                s[i]=str(i)
+                break
+    return (s,s1)
 
 def top_word(s): #получаем наиболее часто встречающиеся слова
     tw = Counter(s).most_common(17) #(int(len(s)/500))
@@ -142,16 +155,32 @@ def way(s,l): # прописываем путь для сохранения фа
     s= (r[:_end+1] + ")"+ l[::-1].upper()+ "_processed("[::-1] +  r[_end+1:])[::-1]
     return (s)
 
-def main(s,language):
-    f = open(s, "r")
-    file0 = f.read()
-    f.close()
+
+
+def main(s,language, user_dict_now):
+
+    _, ext = s.split('.') # выделяем расширение
+
+    # открываем файл docx или txt
+    if ext == 'docx':
+        doc = Document(s)
+        file0 = ''
+        for i in doc.paragraphs:
+            file0 = file0 + i.text+' ' # Вынести  в отдельную функцию
+
+    if ext == 'txt':
+        f = open(s, "r")
+        file0 = f.read()
+        f.close()
 
     Logejo = form_corp(file0) # получили корпус из строки /list
     # print(Logejo[0:30])
 
-    NFlogejo = normform(Logejo) # Получили список слов в нормальной форме /list
-    # print(NFlogejo[0:30])
+
+    NFlogejo, IndexPlas = compare_with_users_dict(normform(Logejo), user_dict_now) # Получили список слов в нормальной форме /list и индексы слов для перевода по умолчанию.
+    # print(NFlogejo[0:100])
+    # print(IndexPlas[0:100])
+
 
     TopWordLog = del_char(top_word(NFlogejo)) # Получили топовые слова нормального корпуса /list , удалили не слова
     #print("Topword: ",TopWordLog)
@@ -161,30 +190,43 @@ def main(s,language):
     #print("IndexTW: ",IndexTW)
     IndexTW1 = copy.deepcopy(IndexTW) # создаем копию т.к. объект IndexTW1 ,будет изменен в процессе выполнения breakdown(fuck encapsulation)
 
+
     OrdonoTW= breakdown(NFlogejo,TopWordLog,IndexTW1) # получили список слов для замены упорядоченный функцией breakdown /list
     #print("OrdonoTW: ",OrdonoTW)
+
 
     FirstIndex = get_first_index(OrdonoTW, IndexTW) # получили начальные индексы для вставки слов
     #print("first index: ",FirstIndex)
 
-    FinalIndex=get_final_index(IndexTW, FirstIndex) # получили финальный список индексов для перевода
-    #print("FinalIndex: ",FinalIndex)
+
+    FinalIndex=(get_final_index(IndexTW, FirstIndex))+ IndexPlas # получили финальный список индексов для перевода + индексы ранее изученных слов
+    # print("FinalIndex: ",FinalIndex)
+
 
     PostTranslList = transl(Logejo, FinalIndex,language) # получили список c частичным переводом
     #print("PostTranslList: ",PostTranslList[:700])
 
+
     FinalList = insert_notes(PostTranslList, FirstIndex,language)# Вставляем заметки - переводы слов
     #print("FinalList: ", FinalList)
 
+
     FinalStroka = F_splinstr(FinalList)# получили финальную строку с частичным переводом
     #print("FinalStroka:", FinalStroka)
+    #print(type(FinalStroka))
 
 
     #Записываем полученную строку в файл:
-    f = open(way(s,language), "w")
-    f.write(FinalStroka)
-    f.close()
+    if ext == 'docx':
+        doc = Document()
+        doc.add_paragraph(FinalStroka)
+        doc.save(str(way(s,language)))
+
+    if ext == 'txt':
+        f = open(way(s,language), "w")
+        f.write(FinalStroka)
+        f.close()
     return (OrdonoTW)
 
 if __name__ == "__main__":
-    main("2.txt","en")
+    main("2.txt","en",['а', 'a'])

@@ -1,0 +1,34 @@
+{% extends 'Base.html' %}
+{% block title %} Словарь {% endblock %}
+
+{% block content %}
+
+
+<table border='1' cellspacing='0' >
+ <tr>
+     <th>Ru</th>
+     <th>En</th> <!-- За менить En на language -->
+     <th>Date</th>
+ </tr>
+{% for item in user_dict %}
+ <tr>
+
+     <td>{{ item[0] }}</td>
+     <td>{{ item[1] }}</td>
+     <td>{{ item[2] }}</td>
+ </tr>
+{% endfor %}
+</table>
+
+<br>
+        <h4>Добавить слово:</h4>
+</br>
+<form action="http://localhost:5000/dict/" class="form-inlane" method="POST">
+        <input type="text" class="form-control" placeholder="Ru" name="Ru" value="{{request.form.Ru}}">
+        <input type="text" class="form-control" placeholder="Your Language" name="Language" value="{{request.form.Language}}">
+        <input class="btn btn-default" type="submit">
+</form>
+
+
+
+{% endblock %}

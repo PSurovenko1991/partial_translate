@@ -236,18 +236,59 @@
 # now,t =str(datetime.datetime.now()).split(' ')
 # t = t.split('.')[0]
 #
-# print(now)
-# print(t)
+# # print(now)
+# # print(t)
+#
+#
+# from dbconnect import connect
+#
+# c, conn = connect()
+#
+# for i in range(300):
+#
+#     c.execute('delete from words where '+str(i)+';')
+# c.execute('commit;')
+#
+# c.close()
+# # conn.close()
+#
+# a = [1,2,3]
+# b = [5,6,7]
+# c = a+b
+# print(c)
 
 
-from dbconnect import connect
+# from docx import Document
+# doc = Document('ttt.docx')
+# p=''
+# for i in doc.paragraphs:
+#     print(len(i.text))
+#     p = p+i.text
+# print
+#
+# from datetime import datetime, timedelta, timezone
+# import math
+#
+#
+#
+# v = str(datetime.now(timezone.utc).astimezone())
+# l = len(v)
+# v = int((v[l-6::]).split(':')[0]) # local uts
+# #print(v)
+# now = int(str(datetime.now()).split(' ')[1].split('.')[0].split(':')[0])
+# #print(now)
+#
+# uts0 = v*(-1)+now
+# #print(uts0)
+#
+# midnight = [-1*uts0, 24-uts0]
+# print(math.fabs(-15)>14)
+# for i in reversed(range(len(midnight))):
+#     if math.fabs(midnight[i]) > 14:
+#         del midnight[i]
+# print(midnight)
 
-c, conn = connect()
 
-for i in range(300):
-
-    c.execute('delete from words where '+str(i)+';')
-c.execute('commit;')
-
-c.close()
-conn.close()
+#
+# import random
+# print(random.randint(1,27))

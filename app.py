@@ -12,18 +12,35 @@ import gc
 from functools import wraps
 import datetime
 from transl import trans1
+from flask_mail import Mail, Message
+import random
 
+# email config
+MAIL_SERVER = 'smtp.gmail.com'
+MAIL_PORT = 465
+MAIL_USE_TLS = False
+MAIL_USE_SSL = True
+MAIL_USERNAME = 'PartiaLTranslate@gmail.com'
+MAIL_PASSWORD = '67637111Aa'
 
 
 UPLOAD_FOLDER = 'files/'#
 app = Flask(__name__)
+
 app.secret_key = "my_secret_key"
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER         # папка загрузки файлов
 max_file_size = 2
 app.config['MAX_CONTENT_LENGTH'] = max_file_size * 1024 * 1024 # максимальный размер файла 2мб
 
+app.config.from_object(__name__)
+mail = Mail(app)
 
-# login_d:                                           # Заппрет отображения страниц для анонимного пользователя
+
+
+
+
+
+# Заппрет отображения страниц для анонимного пользователя
 def login_requaired(f):
     @wraps(f)
     def wrap(*args, **kwargs):
@@ -46,6 +63,7 @@ def login_page():
         c, conn = connect()
         if request.method =="POST":
 
+
             data = c.execute("SELECT * FROM users WHERE username = '{0}'".format(request.form['username']))
             data = c.fetchone()[2]
             c.close()
@@ -62,16 +80,12 @@ def login_page():
         error = e
         return render_template('login.html', error=error)
 
-
-
-
 #Выход из системы:
 @app.route('/logout/')
 def logout():
     error=""
     session.clear()
     return redirect(url_for('login_page'))
-
 
 # Регистрация:
 @app.route('/registration/', methods=['GET','POST'])
@@ -101,17 +115,70 @@ def reg_page():
             return redirect(url_for("upload_files"))
     return render_template('registration.html', form = form)
 
-@app.route('/')   #@app.route('/') #           # Отображаем начальную страницу загрузки
+# восстановление пароля:
+#шаг 1: поставить валидацию формы
+@app.route('/repair_pass/', methods=['GET','POST'])
+def repair_pass():
+    c, conn = connect()
+    if request.method =="POST":
+        email = c.execute("SELECT email, username FROM users WHERE email = '{0}'".format(request.form['mail']))
+        global Gusername, Gtestcode
+        email, Gusername = c.fetchone()
+
+        if email is None:
+            print('этот адрес не использовался при регистрации ')
+
+        else:
+            c.close()
+            conn.close()
+
+            Gtestcode = str(random.randint(1000, 9999))
+            msg = Message('Repair Password from Partial Translate',
+                           sender=MAIL_USERNAME,
+                           recipients=[email])
+            msg.body = Gusername+", для восстановления пароля в следующем окне введите: " + Gtestcode
+            mail.send(msg)
+
+            return render_template('repair_pass2.html')# передаём далее username, testcode;
+    return render_template('repair_pass.html')
+#шаг 2:
+@app.route('/repair_pass2/', methods=['GET','POST'])
+def repair_pass_step2():
+    if request.method == "POST":
+        if Gusername == request.form['username'] and Gtestcode == request.form['testcode']:
+            return render_template('repair_pass3.html')
+        else:
+            print("Одно из указанных значений неверно, попробуйте ещё раз")
+    return render_template('repair_pass2.html')
+#шаг 3:
+@app.route('/repair_pass3/', methods=['GET','POST'])
+def repair_pass_step3():
+    if request.method == "POST":
+        if  request.form['new_password'] ==  request.form['confirm']:
+            password = str(sha256_crypt.encrypt(request.form['new_password']))
+            # print(password)
+            c, conn = connect()
+            ex = "update users set password = "+str("'"+(password)+"'")+ " where username = '"+Gusername+"';"
+            # print(ex)
+            c.execute(ex)
+            c.execute('commit;')
+            c.close()
+            conn.close()
+            return  render_template('login.html')
+        else:
+            print("пароли не совпадают")
+    return render_template('repair_pass3.html')
+
+
+
+# Отображаем начальную страницу загрузки
+@app.route('/')   #@app.route('/') #
 def base():
     return render_template('Base.html')
 
-# @app.route('/upload/')    #           # Отображаем начальную страницу загрузки
-# @login_requaired
-# def upload_file():
-#     return render_template('upload.html')
-
+# Получаем файл от пользователя, обрабатываем, сохраняем список обработанных слов для пользователя
 @login_requaired
-@app.route('/upload/', methods=['GET', 'POST'])    # Получаем файл от пользователя, обрабатываем, сохраняем список обработанных слов для пользователя
+@app.route('/upload/', methods=['GET', 'POST'])
 def upload_files():
 
     language_dict={
@@ -153,7 +220,19 @@ def upload_files():
 # вносим слова в базу для текущего пользователя:
 #!!!!!!!!!!!!!!!
 
-        x_list = core.main(fname2, language_dict[language])# str(language_dict(language))
+        c, conn = connect()
+        ex = 'SELECT * FROM users WHERE username = ' + '"' + session['username'] + '"'
+        user_id = c.execute(ex)
+        user_id = str(c.fetchone()[0])
+
+        #Замена ранее изученных слов:
+        ex = 'select RU, '+language_dict[language].upper()+'  FROM (words_users JOIN words ON words_users.id_word=words.id) where id_user = "' + user_id + '" order by date;'
+        user_dict_now = c.execute(ex)
+        user_dict_now = c.fetchall() # передаём в core для автозамены
+
+
+        x_list = core.main(fname2, language_dict[language],user_dict_now)# str(language_dict(language))# !!!!!!!:L:L:L:L:!!!
+
         # f.save(secure_filename(f.filename))
         now,t =  str(datetime.datetime.now()).split(' ') #текущая дата - now
         now = now.split('-')[0]+now.split('-')[1]+now.split('-')[2]
@@ -161,10 +240,8 @@ def upload_files():
         x_list2 = []
         for i in x_list:
             x_list2.append(str(trans1(i,language_dict[language])))
-        c, conn = connect()
-        ex = 'SELECT * FROM users WHERE username = '+'"'+ session['username']+'"'
-        user_id = c.execute(ex)
-        user_id = str(c.fetchone()[0])
+
+
         for i in range(len(x_list)):
             # проверяем добавлялось ли слово ранее в словарь
             ex = 'SELECT * FROM words WHERE RU = "'+str(x_list[i])+'";'
@@ -193,13 +270,48 @@ def upload_files():
         return render_template('upload.html')
     return render_template('upload.html')
 
+# Отдаем файл пользователю
 @login_requaired
-@app.route('/return-files/<fname2>')                 # Отдаем файл пользователю
+@app.route('/return-files/<fname2>')
 def return_files_tut(fname2):
     try:
         return send_file(fname2, attachment_filename="file_X")
     except Exception as e:
         return str(e)
+
+# словарь:
+@app.route('/dict/', methods=['GET','POST'])
+def dict():
+    c, conn = connect()
+    ex = 'SELECT * FROM users WHERE username = ' + '"' + session['username'] + '"'
+    user_id = c.execute(ex)
+    user_id = str(c.fetchone()[0])
+    ex = 'select RU, EN, date FROM (words_users JOIN words ON words_users.id_word=words.id) where id_user = "'+user_id+'" order by date;'
+    user_dict = c.execute(ex)
+    user_dict = c.fetchall()
+    #пользователь вносит свои слова в словарь:
+    if request.method == "POST":
+        Ru_word = request.form['Ru']
+        L_word = request.form['Language']
+        ex = 'INSERT INTO words( RU, EN)  VALUES("'+Ru_word+'" , "'+L_word+'");'
+        c.execute(ex) # Внесли слова в базу
+
+        c.execute('SELECT * FROM words WHERE id=(SELECT max(id) FROM words)')
+        id_word = str(c.fetchone()[0])
+        # получили id внесённого слова
+        now, t = str(datetime.datetime.now()).split(' ')  # текущая дата - now
+        now = now.split('-')[0] + now.split('-')[1] + now.split('-')[2]
+        #создаём связь слово - пользователь
+        ex = 'INSERT INTO words_users(id_user, id_word, date)  VALUES('+user_id+', '+id_word+', '+now+ ');'
+        c.execute(ex)
+        c.execute('commit;')
+        return redirect(url_for("dict"))
+    return render_template('dict.html', user_dict = user_dict )
+
+
+# каталог:
+
+
 
 
 
@@ -217,6 +329,9 @@ def err_413(error):
 def page_not_found(error):
     message = "Страница не найдена!"
     return render_template('error.html', message=message), 404
+
+
+
 
 
 

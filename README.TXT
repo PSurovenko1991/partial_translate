@@ -24,7 +24,11 @@ CREATE DATABASE partial_translate;
 USE partial_translate;
 
 PRAGMA foreign_keys=on;    поддержка внешних ключей
-CREATE TABLE users(id INT(7) AUTO_INCREMENT PRIMARY KEY, username VARCHAR(20), password VARCHAR(2000), email VARCHAR(50));
+CREATE TABLE users(id INT(7) AUTO_INCREMENT PRIMARY KEY, username VARCHAR(20), password VARCHAR(2000), email VARCHAR(50), teacher bit NULL DEFAULT 0, g char(10) DEFAULT NULL);
+
+для присвоения пользователю статуса администратор: UPDATE users SET teacher = 1 WHERE username = 'username(adm)';
+для указания группы пользователя: UPDATE users SET g = 'a' WHERE username = 'username(pupil)';
+
 CREATE TABLE words(id INT(7) AUTO_INCREMENT PRIMARY KEY, RU VARCHAR(100), EN VARCHAR(100), FR VARCHAR(100), DE VARCHAR(100));
 CREATE TABLE words_users(id INT(20) AUTO_INCREMENT PRIMARY KEY, id_user INT(7), id_word INT(7), date DATE, FOREIGN KEY (id_user) REFERENCES users(id), FOREIGN KEY (id_word) REFERENCES words(id));
 
@@ -34,3 +38,6 @@ QUIT;
 
 sudo apt-get install python3.5-MySQLdb
 !*
+
+
+

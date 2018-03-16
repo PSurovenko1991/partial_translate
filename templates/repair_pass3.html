@@ -1,0 +1,23 @@
+{% extends 'Base.html' %}
+{% block title %} Repair_pass_step3 {% endblock %}
+
+{% block content1 %}
+
+<div class="container">
+
+    <br>
+        <h4>Укажите новый пароль:</h4>
+    </br>
+    <form action="http://localhost:5000/repair_pass3/" class="form-inlane" method="POST">
+        <input type="password" class="form-control" placeholder="Пароль" name="new_password" value="{{request.form.new_password}}">
+        <input type="password" class="form-control" placeholder="Повторите пароль" name="confirm" value="{{request.form.confirm}}">
+        <input class="btn btn-default" type="submit">
+    </form>
+    <p>{{error}}</p>
+</div>
+
+
+
+
+
+{% endblock %}

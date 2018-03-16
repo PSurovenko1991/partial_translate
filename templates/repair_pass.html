@@ -1,0 +1,22 @@
+{% extends 'Base.html' %}
+{% block title %} Repair_pass {% endblock %}
+
+{% block content1 %}
+
+<div class="container">
+
+    <br>
+        <h4>Укажите адрес электронной почты:</h4>
+    </br>
+    <form action="http://localhost:5000/repair_pass/" class="form-inlane" method="POST">
+        <input type="text" class="form-control" placeholder="mail" name="mail" value="{{request.form.mail}}">
+        <input class="btn btn-default" type="submit">
+    </form>
+    <p>{{error}}</p>
+</div>
+
+
+
+
+
+{% endblock %}
