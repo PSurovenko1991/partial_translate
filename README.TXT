@@ -18,7 +18,7 @@ sudo systemctl restart mysql.service
 mysql -u root -p
 
 Последующие:
-mysql -u root -p
+mysql -u root -p(sudo for ubuntu 18)
 
 CREATE DATABASE partial_translate;
 USE partial_translate;
@@ -36,8 +36,12 @@ SHOW TABLES;
 DESCRIBE users;
 QUIT;
 
-sudo apt-get install python3.5-MySQLdb
+	sudo apt-get install python3.6-MySQLdb
 !*
 
 
+
+
+heroku.com
+67637111Aa/
 

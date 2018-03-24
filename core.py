@@ -149,15 +149,17 @@ def F_splinstr(s):    #переводим список обратно в стр�
     stro = st.replace("***","\n").replace("–––","–").replace('---','-').replace('+++','+')
     return stro
 
-def way(s,l): # прописываем путь для сохранения файла в ту же директорию, добавляя к названию файла "обработанно"
+def way(s,l,fname): # прописываем путь для сохранения файла в ту же директорию, добавляя к названию файла "обработанно"
     r = s[::-1]
     _end = r.index(".")
     s= (r[:_end+1] + ")"+ l[::-1].upper()+ "_processed("[::-1] +  r[_end+1:])[::-1]
+    s = s.split('.')[0]+fname+'.'+s.split('.')[1]
+
     return (s)
 
 
 
-def main(s,language, user_dict_now):
+def main(s,fname,language, user_dict_now):
 
     _, ext = s.split('.') # выделяем расширение
 
@@ -220,10 +222,10 @@ def main(s,language, user_dict_now):
     if ext == 'docx':
         doc = Document()
         doc.add_paragraph(FinalStroka)
-        doc.save(str(way(s,language)))
+        doc.save(str(way(s,language,fname)))
 
     if ext == 'txt':
-        f = open(way(s,language), "w")
+        f = open(way(s,language,fname), "w")
         f.write(FinalStroka)
         f.close()
     return (OrdonoTW)

@@ -292,3 +292,10 @@
 #
 # import random
 # print(random.randint(1,27))
+import MySQLdb
+
+
+a = {'a':'aaa','b':'bbb','c':'ccc'}
+a1 = a['a']
+print(a1)
+
