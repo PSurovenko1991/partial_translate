@@ -1,2 +1,2 @@
 web: gunicorn runp-heroku:app
-init: pybabel compile -d app/translations
+init: app/translations
