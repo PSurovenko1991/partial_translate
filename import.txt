@@ -1,0 +1,15 @@
+
+
+
+
+import: Flask
+	flask-mail
+	textblob
+	passlib
+	pymorphy2, pymorphy-dicts, pymorphy-dicts-ru
+	python-docx
+	requests
+	wtforms
+	sudo apt-get install python3.6-MySQLdb(выбрать системный интерпретатор в pycharm)
+	
+

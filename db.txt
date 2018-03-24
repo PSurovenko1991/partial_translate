@@ -1,5 +1,0 @@
-#
-
-CREATE DATABASE partial_translate;
-USE partial_translate;
-CREATE TABLE users(uid INT(7) AUTO_INCREMENT PRIMARY KEY, username VARCHAR(20), password VARCHAR(70), email VARCHAR(50), settings VARCHAR(33000), tracking VARCHAR(33000), rank INT(3));

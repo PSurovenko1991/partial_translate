@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, send_file, flash, url_for, redirect, session
+from flask import Flask, render_template, request, send_file, flash, url_for, redirect, session, Response
 from werkzeug.utils import secure_filename
 import copy
 import os
@@ -54,31 +54,47 @@ def login_requaired(f):
 
 
 
-#Вход в систему:
+#Вход в систему: +rest
 @app.route('/login/', methods=['GET','POST'])
 def login_page():
     error=""
     try:
-
         c, conn = connect()
-        if request.method =="POST":
-
-
-            data = c.execute("SELECT * FROM users WHERE username = '{0}'".format(request.form['username']))
+        requestType = 0
+        if request.content_type == 'application/json':
+            Content = request.get_json()
+            username = Content['login']
+            password = Content["pass"]
+            requestType = 1
+        if request.method == "POST" and requestType == 0:
+            username = request.form['username']
+            password = request.form['password']
+            requestType = 2
+        if requestType != 0:
+            data = c.execute("SELECT * FROM users WHERE username = '{0}'".format(username))
             data = c.fetchone()[2]
-            c.close()
-            conn.close()
-            if sha256_crypt.verify((request.form['password']),data):
-                session['logged_in'] = True
-                session['username'] = request.form['username']
-
-                return redirect(url_for('upload_files'))
-            else:
-                error = "Неверный логин или пароль. Попробуйте ещё раз"
+            if data is not None:
+                c.close()
+                conn.close()
+                if sha256_crypt.verify(password,data):
+                    session['logged_in'] = True
+                    session['username'] = username
+                    if requestType == 1:
+                        return Response(status=200)
+                    else:
+                        return redirect(url_for('upload_files'))
+                else:
+                    if requestType == 1:
+                        return Response(status=403)
+                    else:
+                        error = "Неверный логин или пароль. Попробуйте ещё раз"
         return render_template('login.html', error=error)
     except Exception as e:
         error = e
-        return render_template('login.html', error=error)
+        if requestType == 1:
+            return Response(status=403)
+        else:
+            return render_template('login.html', error=error)
 
 #Выход из системы:
 @app.route('/logout/')
@@ -87,22 +103,36 @@ def logout():
     session.clear()
     return redirect(url_for('login_page'))
 
-# Регистрация:
+# Регистрация:+ rest
 @app.route('/registration/', methods=['GET','POST'])
 def reg_page():
     form = RegistrationForm(request.form)
+
+    requestType = 0
+    if request.content_type == 'application/json':
+        Content = request.get_json()
+        username = Content['login']
+        email = Content["email"]
+        password = sha256_crypt.encrypt(Content["pass"])
+        requestType =1
+
     if request.method == "POST" and form.validate():
         username = form.username.data
         email = form.email.data
         password = sha256_crypt.encrypt(str(form.password.data))
+        requestType = 2
+
+    if requestType != 0:
         c, conn = connect()
-        #zap = "SELECT * FROM users WHERE username = '{0}'".format(str((username)))
-        #print(zap)
+        x1 = c.execute("SELECT * FROM users WHERE email = '{0}'".format(str(email)))
         x = c.execute("SELECT * FROM users WHERE username = '{0}'".format(str(username)))
-        if int(x)>0:
-            message = "логин занят, придумайте другой."
+        if int(x) > 0 or int(x1)>0:
+            message = "логин занят, придумайте другой, или адресс эл почты ранее использовался для регистрации"
             print(message)
-            return render_template('registration.html', form=form)
+            if (requestType == 1):
+                return Response(status=403)
+            else:
+                return render_template('registration.html', form=form)
         else:
             c.execute("INSERT INTO users (username, password, email) VALUES (%s, %s, %s)",
                     (thwart(username),thwart(password),thwart(email)))
@@ -112,61 +142,106 @@ def reg_page():
             gc.collect()
             session["logged_in"] = True
             session['username'] = username
-            return redirect(url_for("upload_files"))
+            if (requestType == 1):
+                return Response(status=200)
+            else:
+                return redirect(url_for("logout"))
     return render_template('registration.html', form = form)
 
-# восстановление пароля:
-#шаг 1: поставить валидацию формы
+
+# восстановление пароля: +rest шаг 1:
 @app.route('/repair_pass/', methods=['GET','POST'])
 def repair_pass():
     c, conn = connect()
-    if request.method =="POST":
-        email = c.execute("SELECT email, username FROM users WHERE email = '{0}'".format(request.form['mail']))
+    requestType = 0
+    if request.content_type == 'application/json':
+        Content = request.get_json()
+        email = Content['email']
+        requestType = 1
+    if request.method =="POST" and requestType ==0:
+        email = request.form['mail']
+        requestType = 2
+    if requestType != 0:
+        c.execute("SELECT email, username FROM users WHERE email = '{0}'".format(email))
         global Gusername, Gtestcode
-        email, Gusername = c.fetchone()
-
-        if email is None:
-            print('этот адрес не использовался при регистрации ')
-
+        if c.fetchone() is None:
+            if requestType ==2:
+                print('этот адрес не использовался при регистрации ')
+            else:
+                return Response(status=403)
         else:
+            email, Gusername = c.fetchone()
             c.close()
             conn.close()
-
             Gtestcode = str(random.randint(1000, 9999))
             msg = Message('Repair Password from Partial Translate',
                            sender=MAIL_USERNAME,
                            recipients=[email])
             msg.body = Gusername+", для восстановления пароля в следующем окне введите: " + Gtestcode
             mail.send(msg)
-
-            return render_template('repair_pass2.html')# передаём далее username, testcode;
+            if requestType == 2:
+                return redirect(url_for("repair_pass_step2"))
+            else:
+                return Response(status=200)
     return render_template('repair_pass.html')
 #шаг 2:
 @app.route('/repair_pass2/', methods=['GET','POST'])
 def repair_pass_step2():
-    if request.method == "POST":
-        if Gusername == request.form['username'] and Gtestcode == request.form['testcode']:
-            return render_template('repair_pass3.html')
+    requestType = 0
+    if request.content_type == 'application/json':
+        Content = request.get_json()
+        username = Content['username']
+        testcode = Content['testcode']
+        requestType = 1
+    if request.method == "POST" and requestType == 0:
+        username = request.form['username']
+        testcode = request.form['testcode']
+        requestType =2
+    if requestType!= 0:
+        if Gusername == username and Gtestcode == testcode:
+            if requestType == 2:
+                return render_template('repair_pass3.html')
+            else: return Response(status=200)
         else:
-            print("Одно из указанных значений неверно, попробуйте ещё раз")
+            if requestType == 2:
+                print("Одно из указанных значений неверно, попробуйте ещё раз")
+            else: return Response(status=403)
     return render_template('repair_pass2.html')
 #шаг 3:
 @app.route('/repair_pass3/', methods=['GET','POST'])
 def repair_pass_step3():
-    if request.method == "POST":
-        if  request.form['new_password'] ==  request.form['confirm']:
-            password = str(sha256_crypt.encrypt(request.form['new_password']))
-            # print(password)
+    requestType = 0
+    if request.content_type == 'application/json':
+        Content = request.get_json()
+        new_password = Content['new_password']
+        confirm = Content['confirm']
+        requestType = 1
+
+    if request.method == "POST" and requestType == 0:
+        new_password = request.form['new_password']
+        confirm = request.form['confirm']
+        requestType =2
+    if requestType!=0:
+        if  new_password ==  confirm:
+            # print(new_password)
+            # print(confirm)
+            # print(requestType)
+            password = str(sha256_crypt.encrypt(new_password))
             c, conn = connect()
             ex = "update users set password = "+str("'"+(password)+"'")+ " where username = '"+Gusername+"';"
-            # print(ex)
             c.execute(ex)
             c.execute('commit;')
             c.close()
             conn.close()
-            return  render_template('login.html')
+            if requestType == 2:
+                return redirect(url_for("login_page"))
+            else:
+                return Response(status=200)
         else:
-            print("пароли не совпадают")
+            if requestType == 2:
+                print("пароли не совпадают")
+            else:
+                return Response(status=403)
     return render_template('repair_pass3.html')
 
 
@@ -177,6 +252,7 @@ def base():
     return render_template('Base.html')
 
 # Получаем файл от пользователя, обрабатываем, сохраняем список обработанных слов для пользователя
+# В Rest не нуждается, только для пользователя сайта.
 @login_requaired
 @app.route('/upload/', methods=['GET', 'POST'])
 def upload_files():
@@ -231,7 +307,7 @@ def upload_files():
         user_dict_now = c.fetchall() # передаём в core для автозамены
 
 
-        x_list = core.main(fname2, language_dict[language],user_dict_now)# str(language_dict(language))# !!!!!!!:L:L:L:L:!!!
+        x_list = core.main(fname2, fname.split('.')[0], language_dict[language],user_dict_now)# str(language_dict(language))# !!!!!!!:L:L:L:L:!!!
 
         # f.save(secure_filename(f.filename))
         now,t =  str(datetime.datetime.now()).split(' ') #текущая дата - now
@@ -263,8 +339,8 @@ def upload_files():
         c.close()
         conn.close()
 #!!!!!!!!!!!!!!!!!
-
-        return render_template('download.html', fname2=str(n+1)+"_processed("+language_dict[language].upper()+")"+"."+ext) #'file uploaded successfully'
+                                                                                                                    #fname.split('.')[0]+
+        return render_template('download.html', fname2=str(n + 1)+"_processed("+language_dict[language].upper()+")"+fname.split('.')[0]+"."+ext) #'file uploaded successfully'
 
     if request.method == 'GET':
         return render_template('upload.html')
@@ -282,6 +358,9 @@ def return_files_tut(fname2):
 # словарь:
 @app.route('/dict/', methods=['GET','POST'])
 def dict():
+
+    requestType = 0
+
     c, conn = connect()
     ex = 'SELECT * FROM users WHERE username = ' + '"' + session['username'] + '"'
     user_id = c.execute(ex)
@@ -290,9 +369,20 @@ def dict():
     user_dict = c.execute(ex)
     user_dict = c.fetchall()
     #пользователь вносит свои слова в словарь:
-    if request.method == "POST":
+
+
+    if request.content_type == 'application/json':
+        Content = request.get_json()
+        Ru_word = Content['Ru_word']
+        L_word = Content['L_word']
+        requestType = 1
+
+    if request.method == "POST" and requestType ==0:
         Ru_word = request.form['Ru']
         L_word = request.form['Language']
+        requestType =2
+
+    if requestType!=0:
         ex = 'INSERT INTO words( RU, EN)  VALUES("'+Ru_word+'" , "'+L_word+'");'
         c.execute(ex) # Внесли слова в базу
 
@@ -305,7 +395,15 @@ def dict():
         ex = 'INSERT INTO words_users(id_user, id_word, date)  VALUES('+user_id+', '+id_word+', '+now+ ');'
         c.execute(ex)
         c.execute('commit;')
-        return redirect(url_for("dict"))
+        if requestType ==2:
+            requestType = 0
+            return redirect(url_for("dict"))
+
+        else:
+            requestType = 0
+            return Response(status=200)
+
+
     return render_template('dict.html', user_dict = user_dict )
 
 
