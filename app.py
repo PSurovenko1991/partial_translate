@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, send_file, flash, url_for, redirect, session, Response
+from flask import Flask, render_template, request, send_file, flash, url_for, redirect, session, Response, jsonify
 from werkzeug.utils import secure_filename
 import copy
 import os
@@ -7,13 +7,15 @@ import MySQLdb
 from dbconnect import connect
 from WForm import RegistrationForm
 from passlib.hash import sha256_crypt
-from MySQLdb import escape_string as thwart
 import gc
 from functools import wraps
 import datetime
 from transl import trans1
 from flask_mail import Mail, Message
 import random
+import eng_to_ipa as ipa
+import json
+from YaDiskList import diskk
 
 # email config
 MAIL_SERVER = 'smtp.gmail.com'
@@ -21,7 +23,7 @@ MAIL_PORT = 465
 MAIL_USE_TLS = False
 MAIL_USE_SSL = True
 MAIL_USERNAME = 'PartiaLTranslate@gmail.com'
-MAIL_PASSWORD = '67637111Aa'
+MAIL_PASSWORD = '****' # 
 
 
 UPLOAD_FOLDER = 'files/'#
@@ -58,10 +60,11 @@ def login_requaired(f):
 @app.route('/login/', methods=['GET','POST'])
 def login_page():
     error=""
+    requestType = 0
     try:
         c, conn = connect()
-        requestType = 0
-        if request.content_type == 'application/json':
+
+        if request.content_type == 'application/json; charset=UTF-8' or request.content_type == 'application/json':
             Content = request.get_json()
             username = Content['login']
             password = Content["pass"]
@@ -80,19 +83,22 @@ def login_page():
                     session['logged_in'] = True
                     session['username'] = username
                     if requestType == 1:
-                        return Response(status=200)
+                        return jsonify({"logged":session['logged_in'],"username":session['username']})
+                        # return Response(status=200)
                     else:
                         return redirect(url_for('upload_files'))
                 else:
                     if requestType == 1:
-                        return Response(status=403)
+                        return jsonify({"logged":session['logged_in'],"username":session['username']})
+                        # return Response(status=403)
                     else:
                         error = "Неверный логин или пароль. Попробуйте ещё раз"
         return render_template('login.html', error=error)
     except Exception as e:
         error = e
         if requestType == 1:
-            return Response(status=403)
+            return jsonify({"logged":session['logged_in'],"username":session['username']})
+                # Response(status=403)
         else:
             return render_template('login.html', error=error)
 
@@ -114,28 +120,38 @@ def reg_page():
         username = Content['login']
         email = Content["email"]
         password = sha256_crypt.encrypt(Content["pass"])
+        YaDiskLogin=''
         requestType =1
 
-    if request.method == "POST" and form.validate():
+
+    if request.method == "POST" and form.validate() and requestType!=1:
         username = form.username.data
         email = form.email.data
         password = sha256_crypt.encrypt(str(form.password.data))
+        YaDiskLogin = form.Yalogin.data+";"+form.Yapassword.data
         requestType = 2
 
     if requestType != 0:
         c, conn = connect()
-        x1 = c.execute("SELECT * FROM users WHERE email = '{0}'".format(str(email)))
-        x = c.execute("SELECT * FROM users WHERE username = '{0}'".format(str(username)))
-        if int(x) > 0 or int(x1)>0:
+        ex = "SELECT * FROM users WHERE email = '{0}';".format(str(email))
+        c.execute(ex)
+        x1 =c.fetchone()
+        ex = "SELECT * FROM users WHERE username = '{0}';".format(str(username))
+        c.execute(ex)
+        x=c.fetchone()
+        if x!=None or x1!=None :
             message = "логин занят, придумайте другой, или адресс эл почты ранее использовался для регистрации"
             print(message)
             if (requestType == 1):
-                return Response(status=403)
+                return jsonify({"message":message})
+                # return Response(status=403)
             else:
                 return render_template('registration.html', form=form)
         else:
-            c.execute("INSERT INTO users (username, password, email) VALUES (%s, %s, %s)",
-                    (thwart(username),thwart(password),thwart(email)))
+            ex= "INSERT INTO users (username, password, email, YaDiskLogin) VALUES ('"+username+"','"+password+"','"+email+"','"+YaDiskLogin+"');"
+                    # ((username),(password),(email),(YaDiskLogin))
+
+            c.execute(ex)
             conn.commit()
             c.close()
             conn.close()
@@ -143,7 +159,9 @@ def reg_page():
             session["logged_in"] = True
             session['username'] = username
             if (requestType == 1):
-                return Response(status=200)
+                return jsonify({"registration":"yes"})
+                    # Response(status=200)
+
             else:
                 return redirect(url_for("logout"))
     return render_template('registration.html', form = form)
@@ -162,18 +180,23 @@ def repair_pass():
         email = request.form['mail']
         requestType = 2
     if requestType != 0:
-        c.execute("SELECT email, username FROM users WHERE email = '{0}'".format(email))
+        c.execute("SELECT email, username FROM users WHERE email = '{0}';".format(email))
         global Gusername, Gtestcode
-        if c.fetchone() is None:
+        rawemailusername = c.fetchone()
+        if rawemailusername is None:
             if requestType ==2:
                 print('этот адрес не использовался при регистрации ')
             else:
-                return Response(status=403)
+                return jsonify({"message":'этот адрес не использовался при регистрации '})
         else:
-            email, Gusername = c.fetchone()
+            email, Gusername = rawemailusername
+
+
+            Gtestcode = str(random.randint(1000, 9999))
+            c.execute("INSERT INTO repair_pass (Gusername, testcode) VALUES ('" + Gusername + "', '" + Gtestcode + "');")
+            c.execute("commit;")
             c.close()
             conn.close()
-            Gtestcode = str(random.randint(1000, 9999))
             msg = Message('Repair Password from Partial Translate',
                            sender=MAIL_USERNAME,
                            recipients=[email])
@@ -182,11 +205,12 @@ def repair_pass():
             if requestType == 2:
                 return redirect(url_for("repair_pass_step2"))
             else:
-                return Response(status=200)
+                return jsonify({"message": "step 1 ok"})
     return render_template('repair_pass.html')
 #шаг 2:
 @app.route('/repair_pass2/', methods=['GET','POST'])
 def repair_pass_step2():
+    c, conn = connect()
     requestType = 0
     if request.content_type == 'application/json':
         Content = request.get_json()
@@ -198,14 +222,22 @@ def repair_pass_step2():
         testcode = request.form['testcode']
         requestType =2
     if requestType!= 0:
+
+        c.execute("SELECT Gusername, testcode FROM repair_pass WHERE id =(SELECT max(id) FROM repair_pass);")
+        rawemailusername = c.fetchone()
+        if rawemailusername is None:
+            print("message did not sent")
+            return jsonify({"message": "message did not sent, step 1 is not ok"})
+        else:
+            Gusername, Gtestcode = rawemailusername
         if Gusername == username and Gtestcode == testcode:
             if requestType == 2:
                 return render_template('repair_pass3.html')
-            else: return Response(status=200)
+            else: return jsonify({"message": "step 2 is ok"})
         else:
             if requestType == 2:
                 print("Одно из указанных значений неверно, попробуйте ещё раз")
-            else: return Response(status=403)
+            else: return jsonify({"message": "Одно из указанных значений неверно, попробуйте ещё раз"})
     return render_template('repair_pass2.html')
 #шаг 3:
 @app.route('/repair_pass3/', methods=['GET','POST'])
@@ -228,6 +260,13 @@ def repair_pass_step3():
             # print(requestType)
             password = str(sha256_crypt.encrypt(new_password))
             c, conn = connect()
+            c.execute("SELECT Gusername FROM repair_pass WHERE id =(SELECT max(id) FROM repair_pass);")
+            Gusername = c.fetchone()[0]
+
+            if Gusername is None:
+                print("message did not sent")
+                return jsonify({"message": "message did not sent"})
+
             ex = "update users set password = "+str("'"+(password)+"'")+ " where username = '"+Gusername+"';"
             c.execute(ex)
             c.execute('commit;')
@@ -236,12 +275,12 @@ def repair_pass_step3():
             if requestType == 2:
                 return redirect(url_for("login_page"))
             else:
-                return Response(status=200)
+                return jsonify({"message": "step 3 is ok"})
         else:
             if requestType == 2:
                 print("пароли не совпадают")
             else:
-                return Response(status=403)
+                return jsonify({"message": "password incorrect"})
     return render_template('repair_pass3.html')
 
 
@@ -297,12 +336,12 @@ def upload_files():
 #!!!!!!!!!!!!!!!
 
         c, conn = connect()
-        ex = 'SELECT * FROM users WHERE username = ' + '"' + session['username'] + '"'
+        ex = "SELECT * FROM users WHERE username = " + "'" + session['username'] + "'"
         user_id = c.execute(ex)
         user_id = str(c.fetchone()[0])
 
         #Замена ранее изученных слов:
-        ex = 'select RU, '+language_dict[language].upper()+'  FROM (words_users JOIN words ON words_users.id_word=words.id) where id_user = "' + user_id + '" order by date;'
+        ex = "select RU, "+language_dict[language].upper()+" FROM (words_users JOIN words ON words_users.id_word=words.id) where id_user = '" + user_id + "' order by date;"
         user_dict_now = c.execute(ex)
         user_dict_now = c.fetchall() # передаём в core для автозамены
 
@@ -320,27 +359,44 @@ def upload_files():
 
         for i in range(len(x_list)):
             # проверяем добавлялось ли слово ранее в словарь
-            ex = 'SELECT * FROM words WHERE RU = "'+str(x_list[i])+'";'
+            ex = "SELECT * FROM words WHERE RU = '"+str(x_list[i])+"';"
             c.execute(ex)
             id_word = c.fetchone()
             if id_word is None:
-                ex = 'INSERT INTO words (RU,'+language_dict[language].upper()+') VALUES ("'+x_list[i]+'", "'+x_list2[i]+'");'
+                ex = "INSERT INTO words (RU,"+language_dict[language].upper()+") VALUES ('"+x_list[i]+"', '"+x_list2[i]+"');"
                 c.execute(ex)
-                c.execute('SELECT * FROM words WHERE id=(SELECT max(id) FROM words)')
+                c.execute("SELECT * FROM words WHERE id=(SELECT max(id) FROM words)")
                 id_word = str(c.fetchone()[0])
             else: id_word=str(id_word[0])
             # проверяем есть ли связь слово-пользователь, если нет - добавляем
-            ex = 'SELECT * FROM words_users WHERE id_user = '+user_id+' and id_word = '+id_word+';'
+            ex = "SELECT * FROM words_users WHERE id_user = "+user_id+" and id_word = "+id_word+";"
             c.execute(ex)
             if c.fetchone() is None:
-                ex = u'INSERT INTO words_users (id_user, id_word, date) VALUES ('+user_id+", "+str(id_word)+", "+now+")"
+                ex = u"INSERT INTO words_users (id_user, id_word, date) VALUES ("+user_id+", "+str(id_word)+", '"+now+"')"
                 c.execute(ex)
-        c.execute('commit;')
+        c.execute("commit;")
         c.close()
         conn.close()
 #!!!!!!!!!!!!!!!!!
-                                                                                                                    #fname.split('.')[0]+
-        return render_template('download.html', fname2=str(n + 1)+"_processed("+language_dict[language].upper()+")"+fname.split('.')[0]+"."+ext) #'file uploaded successfully'
+        # отправляем обработанный файл на диск
+        c, conn = connect()
+        ex = "Select YaDiskLogin from users where username ='"+session['username']+"';"
+        c.execute(ex)
+
+        YaLOGIN, YaPASSWORD = c.fetchone()[0].split(";")
+        disk = diskk(YaLOGIN, YaPASSWORD)
+        fname2 = str(n + 1) + "_processed(" + language_dict[language].upper() + ")" + fname.split('.')[0] + "." + ext #имя обработанного файла
+        disk.upload(fname2, fname2)
+        #добавляем публичную ссылку на файл на яндексдиске в базу
+        link = (disk.ls("/")[len(disk.ls("/")) - 1]["path"])
+        link = (disk.publish_doc(link))
+        ex = "INSERT INTO books (username, link, filename) VALUES ('"+session['username']+"', '"+link+"', '"+fname2+"');"
+        c.execute(ex)
+        c.execute("commit;")
+
+        c.close()
+        conn.close()
+        return render_template('download.html', fname2=fname2) #'file uploaded successfully'
 
     if request.method == 'GET':
         return render_template('upload.html')
@@ -358,20 +414,31 @@ def return_files_tut(fname2):
 # словарь:
 @app.route('/dict/', methods=['GET','POST'])
 def dict():
+    transcription=[]
 
     requestType = 0
 
     c, conn = connect()
-    ex = 'SELECT * FROM users WHERE username = ' + '"' + session['username'] + '"'
+    ex = "SELECT * FROM users WHERE username = " + "'" + session['username'] + "'"
     user_id = c.execute(ex)
     user_id = str(c.fetchone()[0])
-    ex = 'select RU, EN, date FROM (words_users JOIN words ON words_users.id_word=words.id) where id_user = "'+user_id+'" order by date;'
+    ex = "select RU, EN, date FROM (words_users JOIN words ON words_users.id_word=words.id) where id_user = '"+user_id+"' order by date;"
     user_dict = c.execute(ex)
     user_dict = c.fetchall()
-    #пользователь вносит свои слова в словарь:
+
+    
+
+    # c.close
+    # conn.close
+
+    # for i in range(len(user_dict)):
+    #     transcription.append((user_dict[i][1]))
+    # print(transcription)
 
 
-    if request.content_type == 'application/json':
+
+
+    if request.content_type == 'application/json; charset=UTF-8' or request.content_type == 'application/json':
         Content = request.get_json()
         Ru_word = Content['Ru_word']
         L_word = Content['L_word']
@@ -383,37 +450,74 @@ def dict():
         requestType =2
 
     if requestType!=0:
-        ex = 'INSERT INTO words( RU, EN)  VALUES("'+Ru_word+'" , "'+L_word+'");'
+        ex = "INSERT INTO words( RU, EN )  VALUES('"+Ru_word+"' , '"+L_word+"');"
         c.execute(ex) # Внесли слова в базу
 
         c.execute('SELECT * FROM words WHERE id=(SELECT max(id) FROM words)')
         id_word = str(c.fetchone()[0])
         # получили id внесённого слова
         now, t = str(datetime.datetime.now()).split(' ')  # текущая дата - now
-        now = now.split('-')[0] + now.split('-')[1] + now.split('-')[2]
+        # now = now.split('-')[0] + now.split('-')[1] + now.split('-')[2]
         #создаём связь слово - пользователь
-        ex = 'INSERT INTO words_users(id_user, id_word, date)  VALUES('+user_id+', '+id_word+', '+now+ ');'
+        ex = "INSERT INTO words_users(id_user, id_word, date)  VALUES(" +user_id+ ", " +id_word+ ", '" +now+ "');"
         c.execute(ex)
         c.execute('commit;')
+        c.close
+        conn.close
         if requestType ==2:
             requestType = 0
             return redirect(url_for("dict"))
 
         else:
             requestType = 0
-            return Response(status=200)
+            return jsonify({"message":"word added"})
 
 
     return render_template('dict.html', user_dict = user_dict )
 
+# для обращения из приложения
+@app.route('/api-dict/', methods=['GET'])
+def apidict():
+
+	c, conn = connect()
+	ex = "SELECT * FROM users WHERE username = " + "'" + session['username'] + "'"
+	user_id = c.execute(ex)
+	user_id = str(c.fetchone()[0])
+	ex = "select RU, EN, date FROM (words_users JOIN words ON words_users.id_word=words.id) where id_user = '"+user_id+"' order by date;"
+	user_dict = c.execute(ex)
+	user_dict = c.fetchall()
+	for i in range(len(user_dict)):
+		user_dict[i] = list(map(str,list(user_dict[i])))
+	for i in range(len(user_dict)):
+		user_dict[i][1] = user_dict[i][1]+' ['+ipa.convert(user_dict[i][1])+']'
+	c.close
+	conn.close
+	return jsonify({"user_dict": user_dict})
 
 # каталог:
+@app.route('/list/', methods=['GET'])
+def listing():
+	requestType = 0
+	c, conn = connect()
+	ex = "SELECT id, filename, link FROM books WHERE username = " + "'" + session['username'] + "';"
+	user_list = c.execute(ex)
+	user_list = c.fetchall()
+	c.close
+	conn.close
+	return render_template('list.html', user_list=user_list)
 
-
-
-
-
-
+#для обращения из приложения к каталогу
+@app.route('/api-list/', methods=['GET'])
+def apilist():
+	c, conn = connect()
+	ex = "SELECT id, filename, link FROM books WHERE username = " + "'" + session['username'] + "';"
+	user_list = c.execute(ex)
+	user_list = c.fetchall()
+	for i in range(len(user_list)):
+		user_list[i] = list(map(str,list(user_list[i])))
+	c.close
+	conn.close
+	return jsonify({"user_list": user_list})
 
 
 # Блок ошибок:

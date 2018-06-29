@@ -228,6 +228,7 @@ def main(s,fname,language, user_dict_now):
         f = open(way(s,language,fname), "w")
         f.write(FinalStroka)
         f.close()
+
     return (OrdonoTW)
 
 if __name__ == "__main__":

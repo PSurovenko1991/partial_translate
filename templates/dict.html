@@ -3,8 +3,18 @@
 
 {% block content %}
 
+<br>
+        <h4>Добавить слово:</h4>
+</br>
+<form action="http://ptflask.herokuapp.com/dict/" class="form-inlane" method="POST">
+	<div class="form-group">
+        <input type="text" class="form-control" placeholder="Ru" name="Ru" value="{{request.form.Ru}}">
+        <input type="text" class="form-control" placeholder="Your Language" name="Language" value="{{request.form.Language}}">
+        <input class="btn btn-primary" type="submit">
+	</div>
+</form>
 
-<table border='1' cellspacing='0' >
+<table class="table" border='1' cellspacing='0' >
  <tr>
      <th>Ru</th>
      <th>En</th> <!-- За менить En на language -->
@@ -20,14 +30,7 @@
 {% endfor %}
 </table>
 
-<br>
-        <h4>Добавить слово:</h4>
-</br>
-<form action="http://localhost:5000/dict/" class="form-inlane" method="POST">
-        <input type="text" class="form-control" placeholder="Ru" name="Ru" value="{{request.form.Ru}}">
-        <input type="text" class="form-control" placeholder="Your Language" name="Language" value="{{request.form.Language}}">
-        <input class="btn btn-default" type="submit">
-</form>
+
 
 
 

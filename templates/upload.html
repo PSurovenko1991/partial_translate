@@ -3,19 +3,20 @@
 
 {% block content %}
 
-      <form action = "http://localhost:5000/upload/" method = "POST"
+      <center style="padding: 40px">
+	<form action = "http://ptflask.herokuapp.com/upload/" method = "POST"
          enctype = "multipart/form-data">
          <input type = "file" name = "file" />
-         <input type = "submit"/>
+         <input class="btn btn-primary" type = "submit"/>
 
-      Выбор языка:
-    <select  name="Language:" >
-    <option>English</option>
-    <option>Deutsch</option>
-    <option>Français</option>
-    </select>
+			  Выбор языка:
+			<select  name="Language:" >
+			<option>English</option>
+			<option>Deutsch</option>
+			<option>Français</option>
+			</select>
        </form>
-
+	</center>	
 
 
 {% endblock %}

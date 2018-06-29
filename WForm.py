@@ -9,4 +9,6 @@ class RegistrationForm(Form):
     password = PasswordField('Password',[validators.required(),
                                          validators.equal_to('confirm', message='password must match.')])
     confirm = PasswordField('repeat password')
+    Yalogin = StringField('Yandex login')
+    Yapassword = StringField('Yandex password')
     accept = BooleanField('<a href="/"> I accept</a>', [validators.required()])

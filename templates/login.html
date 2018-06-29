@@ -3,40 +3,20 @@
 
 {% block content1 %}
 
-<div class="container">
+<div class="container form-group">
 
     <br>
         <h4>Пожалуйста войдите:</h4>
     </br>
-    <form action="http://localhost:5000/login/" class="form-inlane" method="POST">
-        <input type="text" class="form-control" placeholder="Логин" name="username" value="{{request.form.username}}">
+    <form action="http://ptflask.herokuapp.com/login/" class="form-inlane" method="POST">
+        <input type="text" class="form-control" placeholder="Логин" name="username" value="{{request.form.username}}" size="1000px">
         <input type="password" class="form-control" placeholder="Пароль" name="password" value="{{request.form.password}}">
-        <input class="btn btn-default" type="submit">
+        <input style="margin-top:10px" class="btn btn-primary" type="submit" text="Вход">
     </form>
-    <a href = "/repair_pass/">Забыли пароль?</a>
+    <a class="btn btn-primary active" style="margin-top:10px" href = "/repair_pass/">Забыли пароль?</a>
     <p>{{error}}</p>
 </div>
 
-   <!-- <h4 id="repairpassword_visible">Забыли пароль?</h4>
-
-    <div style="visibility:hidden" id="repairpassword">
-    <form   action="http://localhost:5000/login/" class="form-inlane" method="POST">
-        <input type="email" class="form-control" placeholder="почта" name="email" value="{{request.form.email}}">
-        <input class="btn btn-default" type="submit" placeholder="Восстановить">
-    </form>
-    </div>
-
-</div>
-
-<script>
-    window.onload = function() {
-        document.getElementById("repairpassword_visible").onclick = function(e) {
-            document.getElementById("repairpassword").style.visibility="visible";
-        }
-    }
-</script>
-
--->
 
 
 {% endblock %}

@@ -5,41 +5,46 @@
             <meta charset="UTF-8">
             <link rel="stylesheet" href="/static/css/style.css">
             <link rel="shortcut icon" href='F.ico' />
+			<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB" crossorigin="anonymous">
+			
             <title>{% block title %} Сайт {% endblock %}</title>
         </head>
 
 
 <body>
     <div>
-        <div id="menu">
+       <center> <div id="menu" position ="absolute">
 
                 {% if session.logged_in %}
 
-                <a href="/">Главная</a>
-                <a href="/upload/">Обработать файл</a>
+                
+                <a class="btn btn-primary active" href="/upload/">Обработать файл</a>
 
-                <a href="/feed/">Уведомления</a>
-                <a href="/dict/">Словарь</a>
+                <a class="btn btn-primary active" href="/list/">Каталог</a>
+                <a class="btn btn-primary active" href="/dict/">Словарь</a>
 
-                <a href="/logout/">Выйти</a>
+                <a class="btn btn-primary active" href="/logout/">Выйти</a>
 
                 {% else %}
 
-                <a href="/">Главная</a>
-                <a href="/registration/">Регистрация</a>
-                <a href="/login/">Войти</a>
+                
+                <a class="btn btn-primary active" href="/registration/">Регистрация</a>
+                <a class="btn btn-primary active" href="/login/">Войти</a>
 
                 {% endif%}
-        </div>
+        </div> </center>
         <div id="content1">
                  {% block content1 %}{% endblock %}
         </div>
 
         <div id="content">
-                 {% block content %}Контент главной страницы{% endblock %}
+                 {% block content %}{% endblock %}
 
         </div>
 
     </div>
+	<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+	<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js" integrity="sha384-smHYKdLADwkXOn1EmN1qk/HfnUcbVRZyYmZ4qpPea6sjB/pTJ0euyQp0Mk8ck+5T" crossorigin="anonymous"></script>
 </body>
 </html>
